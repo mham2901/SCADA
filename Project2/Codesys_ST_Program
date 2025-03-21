@@ -1,0 +1,214 @@
+FUNCTION_BLOCK POU
+
+(* ===================================================================================== *)
+(*                            INPUT VARIABLES                                           *)
+(* ===================================================================================== *)
+
+VAR_INPUT
+    Start              : BOOL := FALSE;  (* Start signal *)
+    Stop_Motor         : BOOL := FALSE;  (* Stop motor command *)
+    Fill_Tank          : BOOL;           (* Fill tank command *)
+    Reset              : BOOL := FALSE;  (* Reset system *)
+    CoolingFan_Internal : BOOL;          (* Cooling fan status *)
+    Compressor_Internal : BOOL;          (* Compressor status *)
+END_VAR
+
+(* ===================================================================================== *)
+(*                            INTERNAL VARIABLES                                        *)
+(* ===================================================================================== *)
+
+VAR
+    (* -------------------- System Parameters -------------------- *)
+    Temp_Internal         : INT := 25;   (* Internal temperature (°C) *)
+    Pressure_Internal     : LREAL := 5.2;(* Internal pressure (bar) *)
+    Tank_Level_Internal   : INT := 75;   (* Tank level (%) *)
+    Motor_Speed_Internal  : LREAL := 15; (* Motor speed (RPM) *)
+    Pump_flow_Internal    : INT := 30;   (* Pump flow rate (L/min) *)
+
+    (* -------------------- Alarm Status Flags -------------------- *)
+    AlarmLowPressure_Internal      : BOOL;  (* Low pressure alarm *)
+    AlarmHighTemperature_Internal  : BOOL;  (* High temperature alarm *)
+    AlarmLowTank_Internal          : BOOL;  (* Low tank level alarm *)
+    AlarmHighMotorSpeed_Internal   : BOOL;  (* High motor speed alarm *)
+    AlarmPump_Internal             : BOOL;  (* Pump alarm *)
+
+    (* -------------------- Active Lamp Indicator -------------------- *)
+    ActiveLamp_Internal    : BOOL;  (* Indicates if the system is active *)
+
+    (* -------------------- Blink Timers for Alarms -------------------- *)
+    BlinkTimer   : TON;  (* Timer for high temperature alarm blinking *)
+    BlinkTimer1  : TON;  (* Timer for low pressure alarm blinking *)
+    BlinkTimer2  : TON;  (* Timer for high motor speed alarm blinking *)
+    BlinkTimer3  : TON;  (* Timer for low tank level alarm blinking *)
+    BlinkTimer4  : TON;  (* Timer for pump alarm blinking *)
+
+    (* -------------------- Blink State Variables -------------------- *)
+    BlinkState   : BOOL := FALSE;  (* Blink state for high temperature alarm *)
+    BlinkState1  : BOOL := FALSE;  (* Blink state for low pressure alarm *)
+    BlinkState2  : BOOL := FALSE;  (* Blink state for high motor speed alarm *)
+    BlinkState3  : BOOL := FALSE;  (* Blink state for low tank level alarm *)
+    BlinkState4  : BOOL := FALSE;  (* Blink state for pump alarm *)
+END_VAR
+
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+(* ===================================================================================== *)(* ===================================================================================== *)(* ===================================================================================== *)
+
+(* ===================================================================================== *)
+(*                               SYSTEM CONTROL LOGIC                                   *)
+(* ===================================================================================== *)
+
+(* ---------------------- START SYSTEM OPERATION ---------------------- *)
+IF Start THEN 
+    ActiveLamp_Internal := TRUE;
+    Temp_Internal := Temp_Internal + 1;
+    Pressure_Internal := Pressure_Internal - 0.2;
+    Motor_Speed_Internal := Motor_Speed_Internal + 1;
+    Pump_flow_Internal := Pump_flow_Internal + 10;
+    Tank_Level_Internal := Tank_Level_Internal - 1;
+END_IF;
+
+(* ===================================================================================== *)
+(*                                ALARM HANDLING                                        *)
+(* ===================================================================================== *)
+
+(* ---------------------- HIGH TEMPERATURE ALARM (BLINKING) ---------------------- *)
+IF Temp_Internal > 45 THEN
+    BlinkTimer(IN := NOT BlinkTimer.Q, PT := T#0.5S); (* Toggle timer every 0.5 sec *)
+    
+    IF BlinkTimer.Q THEN
+        BlinkState := NOT BlinkState; (* Toggle blink state *)
+    END_IF;
+    
+    AlarmHighTemperature_Internal := BlinkState; (* Assign to alarm *)
+ELSE
+    BlinkTimer(IN := FALSE); (* Stop timer when normal *)
+    AlarmHighTemperature_Internal := FALSE; (* Turn off alarm *)
+END_IF;
+
+(* ---------------------- LOW PRESSURE ALARM (BLINKING) ---------------------- *)
+IF Pressure_Internal < 2 THEN
+    BlinkTimer1(IN := NOT BlinkTimer1.Q, PT := T#0.5S);
+    
+    IF BlinkTimer1.Q THEN
+        BlinkState1 := NOT BlinkState1;
+    END_IF;
+    
+    AlarmLowPressure_Internal := BlinkState1;
+ELSE
+    BlinkTimer1(IN := FALSE);
+    AlarmLowPressure_Internal := FALSE;
+END_IF;
+
+(* ---------------------- HIGH MOTOR SPEED ALARM (BLINKING) ---------------------- *)
+IF Motor_Speed_Internal > 30 THEN
+    BlinkTimer2(IN := NOT BlinkTimer2.Q, PT := T#0.5S);
+    
+    IF BlinkTimer2.Q THEN
+        BlinkState2 := NOT BlinkState2;
+    END_IF;
+    
+    AlarmHighMotorSpeed_Internal := BlinkState2;
+ELSE
+    BlinkTimer2(IN := FALSE);
+    AlarmHighMotorSpeed_Internal := FALSE;
+END_IF;
+
+(* ---------------------- LOW TANK LEVEL ALARM (BLINKING) ---------------------- *)
+IF Tank_Level_Internal < 20 THEN
+    BlinkTimer3(IN := NOT BlinkTimer3.Q, PT := T#0.5S);
+    
+    IF BlinkTimer3.Q THEN
+        BlinkState3 := NOT BlinkState3;
+    END_IF;
+    
+    AlarmLowTank_Internal := BlinkState3;
+ELSE
+    BlinkTimer3(IN := FALSE);
+    AlarmLowTank_Internal := FALSE;
+END_IF;
+
+(* ---------------------- PUMP ALARM (BLINKING) ---------------------- *)
+IF Tank_Level_Internal < 40 THEN
+    BlinkTimer4(IN := NOT BlinkTimer4.Q, PT := T#0.5S);
+    
+    IF BlinkTimer4.Q THEN
+        BlinkState4 := NOT BlinkState4;
+    END_IF;
+    
+    AlarmPump_Internal := BlinkState4;
+ELSE
+    BlinkTimer4(IN := FALSE);
+    AlarmPump_Internal := FALSE;
+END_IF;
+
+(* ===================================================================================== *)
+(*                                COMPONENT CONTROL                                      *)
+(* ===================================================================================== *)
+
+(* ---------------------- COOLING FAN CONTROL ---------------------- *)
+IF CoolingFan_Internal THEN 
+    IF Temp_Internal > 40 THEN
+        Temp_Internal := Temp_Internal - 5; (* Reduce temperature *)
+    ELSE
+        CoolingFan_Internal := FALSE; (* Turn off fan when temp ≤ 40 *)
+    END_IF;
+END_IF;
+
+(* ---------------------- COMPRESSOR CONTROL ---------------------- *)
+IF Compressor_Internal THEN 
+    IF Pressure_Internal < 4 THEN
+        Pressure_Internal := Pressure_Internal + 0.4; (* Increase pressure *)
+    ELSE
+        Compressor_Internal := FALSE; (* Stop compressor when pressure reaches limit *)
+    END_IF;
+END_IF;
+
+(* ---------------------- MOTOR STOP CONTROL ---------------------- *)
+IF Stop_Motor THEN 
+    IF Motor_Speed_Internal > 0 THEN
+        Motor_Speed_Internal := Motor_Speed_Internal * 0.5 - 1; (* Gradual deceleration *)
+    ELSE
+        Stop_Motor := FALSE; (* Stop motor when speed = 0 *)
+    END_IF;
+END_IF;
+
+(* ---------------------- TANK FILL CONTROL ---------------------- *)
+IF Fill_Tank THEN 
+    IF Tank_Level_Internal < 80 THEN
+        Tank_Level_Internal := Tank_Level_Internal + 10; (* Fill tank *)
+    ELSE
+        Fill_Tank := FALSE; (* Stop filling when full *)
+    END_IF;
+END_IF;
+
+(* ===================================================================================== *)
+(*                                SYSTEM RESET CONTROL                                   *)
+(* ===================================================================================== *)
+
+(* ---------------------- RESET SYSTEM STATE ---------------------- *)
+IF Reset THEN 
+    ActiveLamp_Internal := FALSE;
+    Temp_Internal := 25;
+    Pressure_Internal := 5.2;
+    Motor_Speed_Internal := 15;
+    Pump_flow_Internal := 30;
+    Tank_Level_Internal := 75;
+    Reset := FALSE;
+    Start := FALSE;
+END_IF;
+
+
+
+
+
+
+
+
+

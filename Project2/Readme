@@ -1,1 +1,75 @@
 
+📌 Automation Project Documentation
+
+📂 Overview
+
+This document contains a summary of all the work done on the automation project, including PLC programming, Ignition SCADA scripting, and Structured Text (ST) logic. It serves as a reference for reusability and future improvements.
+
+📜 Project Components
+
+1️⃣ PLC Logic (Structured Text - ST)
+
+Implemented Start/Stop motor logic with controlled deceleration.
+
+Developed a cooling fan logic that turns off when temperature drops below 40°C.
+
+Designed a compressor control to maintain pressure levels.
+
+Created a tank filling system with automatic stopping at a threshold.
+
+Added alarms for high temperature, low pressure, low tank level, and high motor speed.
+
+Used blinking timers for alarm indication.
+
+Implemented reset logic to restore initial values.
+
+📌 File: PLC_Logic.ST
+
+2️⃣ Ignition SCADA Scripting (Python-based)
+
+Wrote a reset script for Ignition that toggles the state back to FALSE after execution.
+
+Used system.tag.writeBlocking() to modify tag values dynamically.
+
+Automated UI button behavior to prevent stuck TRUE states.
+
+📌 File: Ignition_Scripts.py
+
+3️⃣ Alarms & Safety Mechanisms
+
+Blinking Alarm Logic for:
+
+High Temperature (Temp_Internal > 45)
+
+Low Pressure (Pressure_Internal < 2)
+
+High Motor Speed (Motor_Speed_Internal > 30)
+
+Low Tank Level (Tank_Level_Internal < 20)
+
+Timers (TON function) used for blinking indicators.
+
+Failsafe mechanism: stops operations when critical values exceed safe limits.
+
+📌 File: Alarms.ST
+
+4️⃣ Organized Code & Documentation
+
+Added structured comments to categorize logic blocks.
+
+Used modular programming approach to improve readability.
+
+Ensured all critical logic has explanations for future reuse.
+
+📌 File: Documentation.md
+
+🔧 Future Improvements
+
+Implement logging system for better monitoring.
+
+Add HMI/SCADA visualization enhancements.
+
+Improve fault recovery mechanisms.
+
+Optimize performance of scripts for large-scale deployment.
+

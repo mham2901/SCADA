@@ -1,3 +1,21 @@
+(************************************* BLINK EFFECT BY MOHAMED AMINE MHADHBI *******************************************)
+
+(* BlinkTimer(IN := NOT BlinkTimer.Q, PT := T#0.5S); (* Toggle timer every 0.5 sec *) *)
+(* IF BlinkTimer.Q THEN *)
+    (* BlinkState := NOT BlinkState; (* Toggle blink state *) *)
+(* END_IF; *)
+
+
+
+
+
+
+
+
+
+
+
+
 FUNCTION_BLOCK POU
 
 (* ===================================================================================== *)
